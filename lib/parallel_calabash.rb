@@ -57,7 +57,7 @@ module ParallelCalabash
             groups,
             :in_threads => threads,
             :finish => lambda { |_, i, _|  complete.push(i); print complete, "\n" }) do |group, index|
-          @runner.run_tests(group, index, @options)
+          @runner.run_tests(group, index, @options,number_of_processes)
         end
         puts 'All threads complete'
         ResultFormatter.report_results(test_results)

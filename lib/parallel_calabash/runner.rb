@@ -49,12 +49,12 @@ module ParallelCalabash
       'calabash-android run'
     end
 
-    def run_tests(test_files, process_number, options)
+    def run_tests(test_files, process_number, options,total_process_count)
       is_tablet= (@device_helper.device_for_process process_number)[2]
       form_factor_profile = get_profile(options,is_tablet)
       cmd = command_for_test(
           process_number, base_command, options[:apk_path],
-          "#{options[:cucumber_options]} #{options[:cucumber_reports]} #{form_factor_profile}", test_files)
+          "#{options[:cucumber_options]} #{options[:cucumber_reports]} #{form_factor_profile}", test_files, total_process_count)
       $stdout.print "#{process_number}>> Command: #{cmd}\n"
       $stdout.flush
       execute_command_for_process(process_number, cmd)
@@ -72,7 +72,7 @@ module ParallelCalabash
       end
     end
 
-    def command_for_test(process_number, base_command, apk_path, cucumber_options, test_files)
+    def command_for_test(process_number, base_command, apk_path, cucumber_options, test_files, total_process_count)
 
       device_id, device_info, is_tablet, screenshot_prefix = @device_helper.device_for_process process_number
 
@@ -83,6 +83,7 @@ module ParallelCalabash
           ADB_DEVICE_ARG: device_id,
           DEVICE_INFO: device_info,
           TEST_PROCESS_NUMBER: (process_number+1).to_s,
+          TOTAL_PROCESS_COUNT: total_process_count,
           SCREENSHOT_PATH: screenshot_prefix
       }
 
@@ -105,7 +106,7 @@ module ParallelCalabash
       'bundle exec cucumber'
     end
 
-    def run_tests(test_files, process_number, options)
+    def run_tests(test_files, process_number, options,total_process_count)
       test = command_for_test(
           process_number, test_files,
           options[:app_path], "#{options[:cucumber_options]} #{options[:cucumber_reports]}",
@@ -159,7 +160,8 @@ module ParallelCalabash
           TEST_USER: device[:USER] || %x( whoami ).strip,
           # 'DEBUG_UNIX_CALLS' => '1',
           TEST_PROCESS_NUMBER: (process_number+1).to_s,
-          SCREENSHOT_PATH: "PCal_#{process_number+1}_"
+          SCREENSHOT_PATH: "PCal_#{process_number+1}_",
+          TOTAL_PROCESS_COUNT: total_process_count
       }
       env['BUNDLE_ID'] = ENV['BUNDLE_ID'] if ENV['BUNDLE_ID']
       exports = env.map { |k, v| WINDOWS ? "(SET \"#{k}=#{v}\")" : "#{k}='#{v}';export #{k}" }.join(separator)
