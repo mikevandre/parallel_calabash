@@ -53,6 +53,10 @@ def parse_arguments(arguments)
       options[:filter] = filter_opts.split(',').grep(/./)
     end
 
+    opts.on('--restrict-form-factor [FORM_FACTOR]',[:phone, :tablet], 'restrict to phone or tablet') do |form_factor|
+      options[:form_factor_filter]= form_factor
+    end
+
     opts.on('--skip_ios_ping_check', 'Skip the connectivity test for iOS devices') do
       options[:skip_ios_ping_check] = true
     end
@@ -75,6 +79,13 @@ def parse_arguments(arguments)
 
     opts.on("--group-by-scenarios", "Distribute equally as per scenarios. This uses cucumber dry run") do
       options[:group_by_scenarios] = true
+    end
+
+    opts.on("--phone_profile [PROFILE]", "The cucumber profile under which phone tests should be run") do |phone_profile|
+      options[:phone_profile] = phone_profile
+    end
+    opts.on("--tablet_profile [PROFILE]", "The cucumber profile under which tablet tests should be run") do |tablet_profile|
+      options[:tablet_profile] = tablet_profile
     end
 
   end

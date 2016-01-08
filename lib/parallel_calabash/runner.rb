@@ -50,17 +50,34 @@ module ParallelCalabash
     end
 
     def run_tests(test_files, process_number, options)
+      is_tablet= (@device_helper.device_for_process process_number)[2]
+      form_factor_profile = get_profile(options,is_tablet)
       cmd = command_for_test(
           process_number, base_command, options[:apk_path],
-          "#{options[:cucumber_options]} #{options[:cucumber_reports]}", test_files)
+          "#{options[:cucumber_options]} #{options[:cucumber_reports]} #{form_factor_profile}", test_files)
       $stdout.print "#{process_number}>> Command: #{cmd}\n"
       $stdout.flush
       execute_command_for_process(process_number, cmd)
     end
 
+    def get_profile options, is_tablet
+      tablet_profile = options[:tablet_profile]
+      phone_profile = options[:phone_profile]
+      is_phone = !is_tablet
+
+      if is_tablet && tablet_profile
+        "-p #{tablet_profile}"
+      elsif  is_phone && phone_profile
+        "-p #{phone_profile}"
+      end
+    end
+
     def command_for_test(process_number, base_command, apk_path, cucumber_options, test_files)
+
+      device_id, device_info, is_tablet, screenshot_prefix = @device_helper.device_for_process process_number
+
       cmd = [base_command, apk_path, cucumber_options, *test_files].compact*' '
-      device_id, device_info, screenshot_prefix = @device_helper.device_for_process process_number
+
       env = {
           AUTOTEST: '1',
           ADB_DEVICE_ARG: device_id,
@@ -68,6 +85,7 @@ module ParallelCalabash
           TEST_PROCESS_NUMBER: (process_number+1).to_s,
           SCREENSHOT_PATH: screenshot_prefix
       }
+
       separator = (WINDOWS ? ' & ' : ';')
       exports = env.map { |k, v| WINDOWS ? "(SET \"#{k}=#{v}\")" : "#{k}=#{v};export #{k}" }.join(separator)
       exports + separator + cmd

@@ -9,27 +9,56 @@ module ParallelCalabash
     def number_of_connected_devices
       connected_devices_with_model_info.size
     end
+
+
   end
 
   class AdbHelper
     include ParallelCalabash::DevicesHelper
 
-    def initialize(filter = [])
+    def initialize(filter = [], form_factor_filter=:undefined)
       @filter = filter
+      @form_factor_filter = form_factor_filter
     end
 
     def adb_devices_l
       `adb devices -l`
     end
 
+    def adb_get_characteristics device_id
+      `adb -s #{device_id} shell getprop ro.build.characteristics`.strip
+    end
+
+    def is_tablet? device_id
+      characteristics = adb_get_characteristics device_id
+      characteristics.include? 'tablet'
+    end
+
+    def form_factor_match device
+      if @form_factor_filter.nil?
+        true
+      else
+        is_tablet = device[2]
+        looking_tablet = (@form_factor_filter == :tablet)
+        is_tablet == looking_tablet
+      end
+    end
+
     def connected_devices_with_model_info
       begin
-        list =
-            adb_devices_l.split("\n").collect do |line|
-              device = device_id_and_model(line)
-              filter_device(device)
-            end
-        list.compact.each { |device_data| device_data << screenshot_prefix(device_data.first) }
+        if(@list.nil?)
+          @list =
+              adb_devices_l.split("\n").collect do |line|
+                device = device_id_and_model(line)
+                unless device.nil?
+                  device.push(is_tablet?(device[0]))
+                  filter_device(device)
+                end
+              end
+          #added randomization so that it will not always use the same devices for the same tests
+          @list = @list.compact.shuffle.each { |device_data| device_data << screenshot_prefix(device_data.first) }
+        end
+        @list
       rescue
         []
       end
@@ -46,10 +75,12 @@ module ParallelCalabash
     end
 
     def filter_device device
-      if @filter && !@filter.empty? && device
-        device unless @filter.collect { |f| device[0].match(f) || device[1].match(f) }.compact.empty?
-      else
-        device
+      if form_factor_match(device)
+        if @filter && !@filter.empty? && device
+          device unless @filter.collect { |f| device[0].match(f) || device[1].match(f) }.compact.empty?
+        else
+          device
+        end
       end
     end
   end

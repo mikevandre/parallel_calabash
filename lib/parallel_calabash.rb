@@ -15,7 +15,7 @@ module ParallelCalabash
     def initialize(options)
       @options = options
       @helper = if options.has_key?(:apk_path)
-                  ParallelCalabash::AdbHelper.new(options[:filter])
+                  ParallelCalabash::AdbHelper.new(options[:filter], options[:form_factor_filter])
                 else
                   ParallelCalabash::IosHelper.new(
                       options[:filter],
@@ -66,6 +66,7 @@ module ParallelCalabash
       puts 'Parallel run complete'
       Kernel.exit(1) if any_test_failed?(test_results)
     end
+
 
     def any_test_failed?(test_results)
       test_results.any? { |result| result[:exit_status] != 0 }
